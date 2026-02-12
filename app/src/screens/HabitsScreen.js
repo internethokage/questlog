@@ -7,13 +7,14 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import AddHabitModal from '../components/AddHabitModal';
 
 // TODO: Replace with actual API calls
 const MOCK_HABITS = [
-  { id: '1', name: 'Morning Workout', category: 'health', difficulty: 4, completed: false },
-  { id: '2', name: 'Read for 30 minutes', category: 'mind', difficulty: 2, completed: false },
-  { id: '3', name: 'Work on side project', category: 'wealth', difficulty: 3, completed: true },
-  { id: '4', name: 'Call a friend', category: 'social', difficulty: 2, completed: false },
+  { id: '1', name: 'Morning Workout', category: 'health', difficulty: 4, completed: false, streak: 7, frequency: 'daily' },
+  { id: '2', name: 'Read for 30 minutes', category: 'mind', difficulty: 2, completed: false, streak: 3, frequency: 'daily' },
+  { id: '3', name: 'Work on side project', category: 'wealth', difficulty: 3, completed: true, streak: 12, frequency: 'daily' },
+  { id: '4', name: 'Call a friend', category: 'social', difficulty: 2, completed: false, streak: 1, frequency: 'weekly' },
 ];
 
 const CATEGORY_COLORS = {
@@ -33,6 +34,8 @@ const CATEGORY_EMOJI = {
 export default function HabitsScreen() {
   const [habits, setHabits] = useState(MOCK_HABITS);
   const [totalXP, setTotalXP] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingHabit, setEditingHabit] = useState(null);
 
   const completedCount = habits.filter(h => h.completed).length;
   const progressPercent = (completedCount / habits.length) * 100;
@@ -46,9 +49,9 @@ export default function HabitsScreen() {
 
     const xpEarned = habit.difficulty * 10;
     
-    // Update habit
+    // Update habit (mark complete + increment streak)
     setHabits(habits.map(h => 
-      h.id === habitId ? { ...h, completed: true } : h
+      h.id === habitId ? { ...h, completed: true, streak: (h.streak || 0) + 1 } : h
     ));
 
     // Award XP
@@ -57,9 +60,58 @@ export default function HabitsScreen() {
     // Show XP notification
     Alert.alert(
       '⚔️ Quest Complete!',
-      `+${xpEarned} XP earned!\nYour warrior grows stronger!`,
+      `+${xpEarned} XP earned!\n🔥 ${(habit.streak || 0) + 1} day streak!`,
       [{ text: 'Nice!', style: 'default' }]
     );
+  };
+
+  const handleSaveHabit = (habitData) => {
+    if (habitData.id) {
+      // Edit existing habit
+      setHabits(habits.map(h =>
+        h.id === habitData.id
+          ? { ...h, ...habitData, updated_at: new Date().toISOString() }
+          : h
+      ));
+    } else {
+      // Create new habit
+      const newHabit = {
+        id: Date.now().toString(),
+        ...habitData,
+        completed: false,
+        streak: 0,
+        created_at: new Date().toISOString(),
+      };
+      setHabits([...habits, newHabit]);
+    }
+    setEditingHabit(null);
+  };
+
+  const handleEditHabit = (habit) => {
+    setEditingHabit(habit);
+    setModalVisible(true);
+  };
+
+  const handleDeleteHabit = (habitId) => {
+    Alert.alert(
+      'Delete Habit',
+      'Are you sure you want to delete this habit? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setHabits(habits.filter(h => h.id !== habitId));
+          },
+        },
+      ]
+    );
+  };
+
+  const handleAddNew = () => {
+    setEditingHabit(null);
+    setModalVisible(true);
   };
 
   return (
@@ -86,6 +138,17 @@ export default function HabitsScreen() {
               item.completed && styles.habitCardCompleted,
             ]}
             onPress={() => handleCompleteHabit(item.id)}
+            onLongPress={() => {
+              Alert.alert(
+                item.name,
+                'Choose an action',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Edit', onPress: () => handleEditHabit(item) },
+                  { text: 'Delete', style: 'destructive', onPress: () => handleDeleteHabit(item.id) },
+                ]
+              );
+            }}
             disabled={item.completed}
           >
             <View style={styles.habitLeft}>
@@ -100,9 +163,16 @@ export default function HabitsScreen() {
                 ]}>
                   {item.name}
                 </Text>
-                <Text style={styles.habitMeta}>
-                  {CATEGORY_EMOJI[item.category]} {item.difficulty * 10} XP
-                </Text>
+                <View style={styles.habitMetaRow}>
+                  <Text style={styles.habitMeta}>
+                    {CATEGORY_EMOJI[item.category]} {item.difficulty * 10} XP
+                  </Text>
+                  {item.streak > 0 && (
+                    <Text style={styles.habitStreak}>
+                      🔥 {item.streak} {item.frequency === 'weekly' ? 'wk' : 'day'} streak
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
             <View style={styles.habitRight}>
@@ -117,10 +187,21 @@ export default function HabitsScreen() {
         contentContainerStyle={styles.listContent}
       />
 
-      {/* Add Habit Button (TODO) */}
-      <TouchableOpacity style={styles.fab}>
+      {/* Add Habit Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleAddNew}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Add/Edit Habit Modal */}
+      <AddHabitModal
+        visible={modalVisible}
+        onClose={() => {
+          setModalVisible(false);
+          setEditingHabit(null);
+        }}
+        onSave={handleSaveHabit}
+        editingHabit={editingHabit}
+      />
     </View>
   );
 }
@@ -206,9 +287,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: '#888',
   },
+  habitMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   habitMeta: {
     fontSize: 14,
     color: '#888',
+  },
+  habitStreak: {
+    fontSize: 13,
+    color: '#ffd700',
+    fontWeight: '600',
   },
   habitRight: {
     marginLeft: 12,
