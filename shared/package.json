@@ -1,0 +1,7 @@
+{
+  "name": "@questlog/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "types/index.js",
+  "types": "types/index.d.ts"
+}

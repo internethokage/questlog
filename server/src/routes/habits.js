@@ -1,0 +1,195 @@
+const express = require('express');
+const router = express.Router();
+const { supabase } = require('../index');
+
+// Get all habits for user
+router.get('/', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: 'Invalid token' });
+
+    const { data, error } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('archived', false)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create new habit
+router.post('/', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: 'Invalid token' });
+
+    const { name, category, difficulty, frequency } = req.body;
+
+    const { data, error } = await supabase
+      .from('habits')
+      .insert([
+        {
+          user_id: user.id,
+          name,
+          category,
+          difficulty,
+          frequency: frequency || 'daily'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Complete habit (log + award XP)
+router.post('/:id/complete', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: 'Invalid token' });
+
+    const habitId = req.params.id;
+    const { notes } = req.body;
+
+    // Get habit details
+    const { data: habit, error: habitError } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (habitError) throw habitError;
+
+    // Calculate XP (base = difficulty * 10)
+    const baseXP = habit.difficulty * 10;
+    // TODO: Add streak multiplier in future
+
+    // Create log
+    const { data: log, error: logError } = await supabase
+      .from('habit_logs')
+      .insert([
+        {
+          habit_id: habitId,
+          user_id: user.id,
+          notes,
+          xp_earned: baseXP
+        }
+      ])
+      .select()
+      .single();
+
+    if (logError) throw logError;
+
+    // Update user stats
+    const { data: stats, error: statsError } = await supabase
+      .from('user_stats')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (statsError) throw statsError;
+
+    const categoryXPField = `${habit.category}_xp`;
+    const newCategoryXP = (stats[categoryXPField] || 0) + baseXP;
+    const newTotalXP = (stats.total_xp || 0) + baseXP;
+
+    // Calculate new level (level = floor(sqrt(xp / 100)))
+    const newLevel = Math.floor(Math.sqrt(newCategoryXP / 100)) + 1;
+    const categoryLevelField = `${habit.category}_level`;
+
+    const { error: updateError } = await supabase
+      .from('user_stats')
+      .update({
+        [categoryXPField]: newCategoryXP,
+        total_xp: newTotalXP,
+        [categoryLevelField]: newLevel,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({
+      log,
+      xp_earned: baseXP,
+      new_total_xp: newTotalXP,
+      category: habit.category,
+      new_category_xp: newCategoryXP,
+      new_level: newLevel
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update habit
+router.patch('/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: 'Invalid token' });
+
+    const habitId = req.params.id;
+    const updates = req.body;
+
+    const { data, error } = await supabase
+      .from('habits')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', habitId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Archive habit (soft delete)
+router.delete('/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError) return res.status(401).json({ error: 'Invalid token' });
+
+    const habitId = req.params.id;
+
+    const { error } = await supabase
+      .from('habits')
+      .update({ archived: true })
+      .eq('id', habitId)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
