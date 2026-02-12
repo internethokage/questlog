@@ -1,8 +1,8 @@
 # 🔷 QuestLog
 
-**Turn your habits into XP. Level up your life.**
+**Turn your habits into XP. Level up your pixel warrior.**
 
-A gamified habit tracker that treats your life like an RPG. Complete habits to earn XP, level up in 4 categories (Health, Mind, Wealth, Social), and get AI-powered coaching to keep you on track.
+A habit tracker meets idle RPG. Complete real-life habits to fuel your pixel warrior's progression. Your character fights monsters in the background, earning loot and gold while you focus on leveling up IRL.
 
 ---
 
@@ -77,13 +77,18 @@ npm run app
 
 ## 📊 Database Schema
 
-### Tables
+### Core Tables
 - **profiles** - User profiles (extends Supabase auth)
 - **habits** - User's habits (name, category, difficulty)
 - **habit_logs** - Completion records (when, XP earned)
 - **user_stats** - XP and levels per category
-- **achievements** - Unlocked milestones
-- **friendships** - Social connections (future feature)
+
+### RPG Tables
+- **characters** - User's pixel warrior (stats, HP, gold, battle state)
+- **gear** - Inventory (weapons, armor, accessories with stat bonuses)
+- **monsters** - Global monster templates (level, stats, loot tables)
+- **battle_log** - Combat history (victories, defeats, rewards)
+- **achievements** - Unlocked milestones (future)
 
 ### Categories
 - 🏃 **Health** - Workouts, sleep, nutrition
@@ -95,19 +100,49 @@ npm run app
 
 ## 🎮 Core Mechanics
 
+### The Loop
+1. **Complete real-life habits** → Earn XP
+2. **XP fuels your character** → Stats increase based on habit category
+3. **Your warrior auto-battles monsters** → Idle progression while you live your life
+4. **Check in to collect loot** → Gear, gold, level-ups
+5. **Stronger character = harder monsters = better rewards** → Positive feedback loop
+
+### Habit → Character Stat Mapping
+- 🏃 **Health habits** → Strength (melee damage)
+- 🧠 **Mind habits** → Intelligence (magic damage)
+- 💰 **Wealth habits** → Luck (rare loot drops, gold bonus)
+- 🤝 **Social habits** → Charisma (NPC interactions, future features)
+
 ### XP System
 - Base XP = `difficulty × 10`
-- Streak multiplier (future): up to 2x
-- Level formula: `level = floor(sqrt(xp / 100)) + 1`
+- XP goes to both **user stats** (category levels) and **character total XP**
+- Character level = `floor(sqrt(total_xp / 100)) + 1`
+- Each category level increases corresponding stat by 5 points
 
-### Levels
-- Level 1 → 2: 100 XP
-- Level 2 → 3: 400 XP
-- Level 10 → 11: 10,000 XP
+### Idle Battle System
+- Character **auto-fights monsters** every 5 minutes (background process)
+- Battle outcome based on character stats vs monster stats
+- Victory = XP, gold, chance for loot drops
+- Defeat = reduced HP, must heal before next battle
+- Check app to see battle log and collect rewards
 
-### AI Coach (MVP)
-- Canned motivational messages
-- Future: Personalized insights, failure prediction, habit stacking
+### Gear & Loot
+- **5 gear slots:** Weapon, Armor, Helmet, Boots, Accessory
+- **Rarity tiers:** Common, Uncommon, Rare, Epic, Legendary
+- Each piece gives stat bonuses (e.g., +10 Attack Power, +5 Defense)
+- Loot drops from defeating monsters
+- Equip best gear to make your character unstoppable
+
+### Monsters
+- 6+ monster types (Slime, Goblin, Wolf, Orc, Dark Knight, Dragon)
+- Monsters scale with character level
+- Each has unique loot tables
+- Harder monsters = better rewards
+
+### AI Coach (Future)
+- Daily insights based on habits + RPG progress
+- "Your warrior needs more Strength to defeat the Dragon. Hit the gym 3 more times this week!"
+- Personalized quest suggestions
 
 ---
 
@@ -134,12 +169,24 @@ npm run app
 ### Habits
 - `GET /api/habits` - List user's habits
 - `POST /api/habits` - Create new habit
-- `POST /api/habits/:id/complete` - Mark habit done (awards XP)
+- `POST /api/habits/:id/complete` - Mark habit done (awards XP + updates character)
 - `PATCH /api/habits/:id` - Update habit
 - `DELETE /api/habits/:id` - Archive habit
 
+### Character
+- `GET /api/character` - Get character + equipped gear
+- `PATCH /api/character/name` - Update character name
+- `GET /api/character/gear` - Get full gear inventory
+- `POST /api/character/gear/:id/equip` - Equip/unequip gear
+
+### Battles
+- `GET /api/battles/log` - View battle history
+- `POST /api/battles/start` - Start a new battle (manual for now)
+- `POST /api/battles/resolve` - Resolve current battle (auto-combat simulation)
+- `GET /api/battles/monsters` - List all available monsters
+
 ### Stats
-- `GET /api/stats` - User XP, levels, progress
+- `GET /api/stats` - User XP, levels, progress per category
 
 ### AI
 - `GET /api/ai/insight` - Daily AI coach message
@@ -148,19 +195,43 @@ npm run app
 
 ## 🎯 MVP Roadmap (2 Weeks)
 
-### Week 1: Core Flow
-- [x] Supabase schema + migrations
-- [x] Server API scaffolding
-- [x] Basic habits CRUD
-- [ ] XP calculation on completion
+### Week 1: Habits → Character → Battles
+- [x] Supabase schema (core + RPG tables)
+- [x] Server API (habits, character, battles)
+- [x] XP → character stat syncing
+- [x] Idle battle simulation engine
 - [ ] Mobile app login screen
 - [ ] Habit list + daily check-in UI
+- [ ] Character screen (stats, HP, gold)
+- [ ] Battle log UI (text-based for now)
+- [ ] Pixel art sprites (character + 6 monsters)
 
-### Week 2: AI + Polish
-- [ ] AI coach (1 daily insight)
-- [ ] Daily quests (AI picks 3 habits)
-- [ ] Leaderboard (friends only)
-- [ ] Social sharing (export achievements)
+### Week 2: Loot + Polish + Idle Loop
+- [ ] Gear inventory UI
+- [ ] Equip/unequip gear flow
+- [ ] Loot drop animations
+- [ ] Auto-battle background service (5-min intervals)
+- [ ] Push notifications ("Your warrior defeated a Dragon!")
+- [ ] Daily quests (AI picks 3 habits, frames as quests)
+- [ ] Social sharing (export "my warrior" card)
+
+## 🎨 Visual Style
+
+**Pixel Art Aesthetic**
+- 16x16 or 32x32 sprites for characters and monsters
+- Retro RPG feel (inspired by classic JRPGs)
+- Simple animations (idle, attack, victory)
+- UI elements: pixel-style buttons, borders, fonts
+
+**Color Palette**
+- Dark mode optimized (deep blues, purples)
+- Bright accent colors for rarity tiers (gray → green → blue → purple → gold)
+- Health bars, XP bars with gradient fills
+
+**Tools for Assets**
+- Aseprite (pixel art editor)
+- Piskel (browser-based alternative)
+- itch.io / OpenGameArt for free sprite packs (temp assets for MVP)
 
 ---
 
@@ -178,12 +249,31 @@ npm run app
 
 ## 💡 Future Features
 
-- **Streak tracking** with visual fire emoji
-- **Boss fights** - weekly challenges
-- **Monthly raids** - community goals
-- **Partner rewards** - discounts from brands
-- **Bet on yourself** - put money on the line
-- **Advanced AI** - predictive scheduling, failure prevention
+### Core Features
+- **Advanced AI coach** - predictive scheduling, habit stacking, failure prevention
+- **Guilds** - team up with friends, shared boss fights
+- **PvP battles** - challenge friends to duels
+- **Skill trees** - unlock special abilities per category
+- **Partner rewards** - discounts from brands (fitness, books, courses)
+- **Seasonal events** - limited-time monsters + exclusive loot
+
+### Stretch Goals (Wearables)
+- 🍎 **Apple Watch companion app**
+  - Glance at battles in progress
+  - Quick habit check-in (tap to complete)
+  - Live HP/XP bars on watch face
+  - Haptic feedback on level-up
+  
+- 🤖 **WearOS companion app**
+  - Same features as Apple Watch
+  - Optimized for Wear OS UI
+
+- 🥽 **Rokid AI Glasses companion app** (The coolest stretch goal)
+  - AR warrior fighting in your field of view
+  - See your character training while you work out
+  - Real-time battle notifications in AR overlay
+  - "Boss approaching" alerts during your gym session
+  - Voice commands: "Hex, start a battle" / "Hex, check my stats"
 
 ---
 

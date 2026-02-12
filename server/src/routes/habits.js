@@ -128,6 +128,9 @@ router.post('/:id/complete', async (req, res) => {
 
     if (updateError) throw updateError;
 
+    // Update character stats based on new levels
+    await updateCharacterFromHabits(user.id, habit.category, newLevel);
+
     res.json({
       log,
       xp_earned: baseXP,
@@ -191,5 +194,55 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Helper function to update character stats when habits level up
+async function updateCharacterFromHabits(userId, category, newLevel) {
+  // Get current character
+  const { data: character } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!character) return;
+
+  // Map category to stat
+  const statMapping = {
+    health: 'strength',
+    mind: 'intelligence',
+    wealth: 'luck',
+    social: 'charisma'
+  };
+
+  const statToUpdate = statMapping[category];
+  if (!statToUpdate) return;
+
+  // Base stat = level * 5
+  const newStatValue = newLevel * 5;
+
+  // Get equipped gear bonuses
+  const { data: equippedGear } = await supabase
+    .from('gear')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('equipped', true);
+
+  let gearBonus = 0;
+  equippedGear?.forEach(item => {
+    const bonuses = item.stat_bonuses || {};
+    gearBonus += bonuses[statToUpdate] || 0;
+  });
+
+  const finalStatValue = newStatValue + gearBonus;
+
+  // Update character
+  await supabase
+    .from('characters')
+    .update({
+      [statToUpdate]: finalStatValue,
+      updated_at: new Date().toISOString()
+    })
+    .eq('user_id', userId);
+}
 
 module.exports = router;
