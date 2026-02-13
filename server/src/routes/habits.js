@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Complete habit (log + award XP)
+// Complete habit (log + award XP + update streak)
 router.post('/:id/complete', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -69,6 +69,20 @@ router.post('/:id/complete', async (req, res) => {
     const habitId = req.params.id;
     const { notes } = req.body;
 
+    // Check if already completed today
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existingLog } = await supabase
+      .from('habit_logs')
+      .select('id')
+      .eq('habit_id', habitId)
+      .eq('user_id', user.id)
+      .gte('completed_at', `${today}T00:00:00Z`)
+      .single();
+
+    if (existingLog) {
+      return res.status(400).json({ error: 'Habit already completed today' });
+    }
+
     // Get habit details
     const { data: habit, error: habitError } = await supabase
       .from('habits')
@@ -78,6 +92,15 @@ router.post('/:id/complete', async (req, res) => {
       .single();
 
     if (habitError) throw habitError;
+
+    // Update streak (call Postgres function)
+    const { data: streakData, error: streakError } = await supabase
+      .rpc('update_habit_streak', {
+        p_habit_id: habitId,
+        p_user_id: user.id
+      });
+
+    const newStreak = streakData || habit.current_streak + 1;
 
     // Calculate XP (base = difficulty * 10)
     const baseXP = habit.difficulty * 10;
@@ -91,7 +114,8 @@ router.post('/:id/complete', async (req, res) => {
           habit_id: habitId,
           user_id: user.id,
           notes,
-          xp_earned: baseXP
+          xp_earned: baseXP,
+          streak_at_completion: newStreak
         }
       ])
       .select()
@@ -128,13 +152,25 @@ router.post('/:id/complete', async (req, res) => {
 
     if (updateError) throw updateError;
 
+    // Update character stats based on new levels
+    await updateCharacterFromHabits(user.id, habit.category, newLevel);
+
+    // Get updated habit with new streak
+    const { data: updatedHabit } = await supabase
+      .from('habits')
+      .select('current_streak, longest_streak')
+      .eq('id', habitId)
+      .single();
+
     res.json({
       log,
       xp_earned: baseXP,
       new_total_xp: newTotalXP,
       category: habit.category,
       new_category_xp: newCategoryXP,
-      new_level: newLevel
+      new_level: newLevel,
+      streak: updatedHabit?.current_streak || newStreak,
+      longest_streak: updatedHabit?.longest_streak || newStreak
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -191,5 +227,55 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Helper function to update character stats when habits level up
+async function updateCharacterFromHabits(userId, category, newLevel) {
+  // Get current character
+  const { data: character } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (!character) return;
+
+  // Map category to stat
+  const statMapping = {
+    health: 'strength',
+    mind: 'intelligence',
+    wealth: 'luck',
+    social: 'charisma'
+  };
+
+  const statToUpdate = statMapping[category];
+  if (!statToUpdate) return;
+
+  // Base stat = level * 5
+  const newStatValue = newLevel * 5;
+
+  // Get equipped gear bonuses
+  const { data: equippedGear } = await supabase
+    .from('gear')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('equipped', true);
+
+  let gearBonus = 0;
+  equippedGear?.forEach(item => {
+    const bonuses = item.stat_bonuses || {};
+    gearBonus += bonuses[statToUpdate] || 0;
+  });
+
+  const finalStatValue = newStatValue + gearBonus;
+
+  // Update character
+  await supabase
+    .from('characters')
+    .update({
+      [statToUpdate]: finalStatValue,
+      updated_at: new Date().toISOString()
+    })
+    .eq('user_id', userId);
+}
 
 module.exports = router;

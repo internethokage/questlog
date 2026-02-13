@@ -25,10 +25,14 @@ app.get('/health', (req, res) => {
 const habitsRouter = require('./routes/habits');
 const statsRouter = require('./routes/stats');
 const aiRouter = require('./routes/ai');
+const characterRouter = require('./routes/character');
+const battlesRouter = require('./routes/battles');
 
 app.use('/api/habits', habitsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/character', characterRouter);
+app.use('/api/battles', battlesRouter);
 
 // Error handler
 app.use((err, req, res, next) => {
