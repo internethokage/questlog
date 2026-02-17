@@ -1,0 +1,126 @@
+================================================================================
+                        YGGDRASIL - THE WORLD TREE
+                          QuestLog Map Design
+================================================================================
+
+LEGEND:
+  [REALM] = Clickable realm node (shows current level range)
+  ~~~     = Branch (skill tree access point)
+  |||     = Trunk (main progression path)
+  ###     = Roots (starting point)
+
+================================================================================
+                              TIER 4: THE CROWN
+================================================================================
+
+                              ✦ ASGARD ✦
+                           [Hall of Gods]
+                           Levels 33-40
+                               |||
+                               |||
+                          ~~~ ~~~ ~~~
+                          (Skill Trees)
+
+================================================================================
+                             TIER 3: THE CANOPY
+================================================================================
+
+                    ~~~ MUSPELHEIM ~~~
+                    [Realm of Fire]
+                     Levels 28-32
+                          |||
+                          |||
+              ~~~                     ~~~
+         ALFHEIM                   VANAHEIM
+      [Light Elves]               [The Vanir]
+      Levels 18-22               Levels 23-27
+              |||                     |||
+               \                     /
+                \                   /
+                 \                 /
+                  \               /
+                   ~~~~~~~~~~~~~~~
+                        |||
+                        |||
+
+================================================================================
+                              TIER 2: THE TRUNK
+================================================================================
+
+                     ~~~ JOTUNHEIM ~~~
+                    [Realm of Giants]
+                      Levels 14-17
+                          |||
+                          |||
+              ~~~                     ~~~
+         SVARTALFHEIM              MIDGARD
+        [The Dwarves]            [Mortals]
+        Levels 6-9              Levels 10-13
+              |||                     |||
+               \                     /
+                \                   /
+                 \                 /
+                  \               /
+                   ~~~~~~~~~~~~~~~
+                        |||
+                        |||
+
+================================================================================
+                              TIER 1: THE ROOTS
+================================================================================
+
+                     ~~~ NIFLHEIM ~~~
+                    [Mist & Ice]
+                      Levels 4-5
+                          |||
+                          |||
+                          |||
+                     ~~~ HELHEIM ~~~
+                    [Realm of Dead]
+                      Levels 1-3
+                          |||
+                          ###
+                       (ROOTS)
+
+================================================================================
+
+PROGRESSION PATH EXAMPLE:
+  1. Start in HELHEIM (Level 1)
+  2. Defeat Draugr, Hel-Hounds → Reach Level 4
+  3. Ascend to NIFLHEIM
+  4. Defeat Ice Wraiths → Reach Level 6
+  5. Choose branch: SVARTALFHEIM (left) or continue trunk
+  6. ... continue climbing to ASGARD
+  7. Defeat Fallen Allfather → PRESTIGE
+  8. Restart at HELHEIM with bonuses
+
+VISUAL DESIGN NOTES (for pixel art conversion):
+  - Use dark gradient (black at roots → gold at crown)
+  - Branches glow when unlocked (skill trees accessible)
+  - Current realm highlighted (bright color, pulsing)
+  - Locked realms are grayed out/shadowed
+  - Each realm has unique icon/sprite:
+      Helheim:      Skull
+      Niflheim:     Snowflake
+      Svartalfheim: Hammer & Anvil
+      Midgard:      Sword & Shield
+      Jotunheim:    Giant Footprint
+      Alfheim:      Sun/Light Rays
+      Vanaheim:     Tree/Leaf
+      Muspelheim:   Flame
+      Asgard:       Crown/Hall
+
+PIXEL ART DIMENSIONS (suggested):
+  - Vertical scroll (phone portrait orientation)
+  - 320px wide (fits most phones)
+  - Each realm node: 64x64px sprite
+  - Trunk/branches: 16px wide line art
+  - Total height: ~800-1000px (scroll to explore)
+
+INTERACTION:
+  - Tap realm → View realm details (monsters, lore, progress)
+  - Tap branch node → Open skill tree for that branch
+  - Swipe up/down → Scroll tree
+  - "Current Realm" always centered on screen (auto-scroll)
+
+================================================================================

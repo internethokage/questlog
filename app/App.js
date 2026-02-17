@@ -1,39 +1,76 @@
 import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+
+// Screens
+import HabitsScreen from './src/screens/HabitsScreen';
+import CharacterScreen from './src/screens/CharacterScreen';
+import BattlesScreen from './src/screens/BattlesScreen';
+import MapScreen from './src/screens/MapScreen';
+import StatsScreen from './src/screens/StatsScreen';
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🔷 QuestLog</Text>
-      <Text style={styles.subtitle}>Turn your habits into XP</Text>
-      <Text style={styles.version}>v0.1.0 - MVP Scaffolding Complete</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <StatusBar style="light" />
+      <Tab.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#1a1a2e',
+          },
+          headerTintColor: '#fff',
+          tabBarStyle: {
+            backgroundColor: '#1a1a2e',
+            borderTopColor: '#2d4059',
+          },
+          tabBarActiveTintColor: '#ffd700',
+          tabBarInactiveTintColor: '#888',
+        }}
+      >
+        <Tab.Screen 
+          name="Habits" 
+          component={HabitsScreen}
+          options={{
+            tabBarLabel: 'Habits',
+            headerTitle: 'Today\'s Quests',
+          }}
+        />
+        <Tab.Screen 
+          name="Character" 
+          component={CharacterScreen}
+          options={{
+            tabBarLabel: 'Warrior',
+            headerTitle: 'Your Warrior',
+          }}
+        />
+        <Tab.Screen 
+          name="Battles" 
+          component={BattlesScreen}
+          options={{
+            tabBarLabel: 'Battles',
+            headerTitle: 'Battle Log',
+          }}
+        />
+        <Tab.Screen 
+          name="Map" 
+          component={MapScreen}
+          options={{
+            tabBarLabel: 'Yggdrasil',
+            headerTitle: 'The World Tree',
+          }}
+        />
+        <Tab.Screen 
+          name="Stats" 
+          component={StatsScreen}
+          options={{
+            tabBarLabel: 'Stats',
+            headerTitle: 'Progress',
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 20,
-    color: '#888',
-    marginBottom: 32,
-  },
-  version: {
-    fontSize: 14,
-    color: '#444',
-    marginTop: 16,
-  },
-});
